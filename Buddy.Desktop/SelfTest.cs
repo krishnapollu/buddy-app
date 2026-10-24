@@ -22,7 +22,9 @@ internal static class SelfTest
         task.IsDone = true;
         settings.LastAlerts.Remove(taskAlert.Key);
         if (ReminderEngine.Due(settings, [], now.AddMinutes(11)).Any(x => x.Key == taskAlert.Key)) throw new Exception("Completed task fired.");
-        if (Avatars.All.Length < 16 || Avatars.All.Select(x => x.Name).Distinct().Count() != Avatars.All.Length) throw new Exception("Avatar catalog invalid.");
+        if (Avatars.All.Length < 18 || Avatars.All.Select(x => x.Name).Distinct().Count() != Avatars.All.Length ||
+            Avatars.Find("Mohanlal").Frames != 4 || Avatars.Find("Vijay").Frames != 4)
+            throw new Exception("Avatar catalog invalid.");
         var area = new PixelRect(100, 50, 1000, 700);
         if (MainWindow.ReminderTarget(area, new PixelPoint(900, 500), "Center") != new PixelPoint(505, 305))
             throw new Exception("Center reminder target invalid.");

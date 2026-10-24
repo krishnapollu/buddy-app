@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly TextBlock bubble;
     private readonly Grid avatarHost;
     private readonly Grid avatarVisual;
+    private AvatarView? activeAvatar;
     private readonly ScaleTransform avatarScale = new();
     private readonly RotateTransform avatarRotation = new();
     private readonly TranslateTransform avatarLift = new();
@@ -70,20 +71,34 @@ public partial class MainWindow : Window
         motionTimer.Tick += (_, _) => {
             motionStep++;
             var (fraction, lift, phase) = HopFrame(motionStep, motionSteps, motionHops);
+            if (activeAvatar?.HasWalkFrames == true) fraction = Math.Min(1.0, (double)motionStep / motionSteps);
             Position = new PixelPoint(
                 (int)Math.Round(motionStart.X + (motionTarget.X - motionStart.X) * fraction),
                 (int)Math.Round(motionStart.Y + (motionTarget.Y - motionStart.Y) * fraction));
-            avatarLift.Y = -17 * lift;
-            avatarRotation.Angle = Math.Sign(motionTarget.X - motionStart.X) * 5 * Math.Sin(2 * Math.PI * phase);
-            avatarScale.ScaleX = 1 + 0.04 * lift;
-            avatarScale.ScaleY = 1 - 0.07 * lift;
-            shadowScale.ScaleX = 1 - 0.35 * lift;
-            shadowScale.ScaleY = 1 - 0.2 * lift;
+            if (activeAvatar?.HasWalkFrames == true)
+            {
+                activeAvatar.Frame = ((motionStep - 1) / 4) % 4;
+                avatarLift.Y = -2 * Math.Abs(Math.Sin(2 * Math.PI * phase));
+                avatarRotation.Angle = 0;
+                avatarScale.ScaleX = motionTarget.X < motionStart.X ? -1 : 1;
+                avatarScale.ScaleY = 1;
+                shadowScale.ScaleX = shadowScale.ScaleY = 1;
+            }
+            else
+            {
+                avatarLift.Y = -17 * lift;
+                avatarRotation.Angle = Math.Sign(motionTarget.X - motionStart.X) * 5 * Math.Sin(2 * Math.PI * phase);
+                avatarScale.ScaleX = 1 + 0.04 * lift;
+                avatarScale.ScaleY = 1 - 0.07 * lift;
+                shadowScale.ScaleX = 1 - 0.35 * lift;
+                shadowScale.ScaleY = 1 - 0.2 * lift;
+            }
             if (motionStep >= motionSteps) {
                 motionTimer.Stop();
                 avatarLift.Y = 0; avatarRotation.Angle = 0;
                 avatarScale.ScaleX = 1; avatarScale.ScaleY = 1;
                 shadowScale.ScaleX = 1; shadowScale.ScaleY = 1;
+                if (activeAvatar is not null) activeAvatar.Frame = 0;
                 if (motionTarget == homePosition) {
                     movingForAlert = false;
                     settings.X = Position.X; settings.Y = Position.Y; SettingsStore.Save(settings);
@@ -102,11 +117,13 @@ public partial class MainWindow : Window
         {
             try {
                 using var stream = File.OpenRead(settings.ImagePath);
+                activeAvatar = null;
                 SetAvatar(new Image { Source = new Bitmap(stream), Width = 155, Height = 155, Stretch = Stretch.Uniform });
                 return;
             } catch (Exception) { }
         }
-        SetAvatar(new AvatarView(Avatars.Find(settings.Avatar)) { Width = 155, Height = 155 });
+        activeAvatar = new AvatarView(Avatars.Find(settings.Avatar)) { Width = 155, Height = 155 };
+        SetAvatar(activeAvatar);
     }
     private void SetAvatar(Control avatar)
     {
@@ -174,6 +191,7 @@ public partial class MainWindow : Window
         motionTimer.Stop(); alertTimer.Stop(); movingForAlert = false; motionFinished = null;
         avatarLift.Y = 0; avatarRotation.Angle = 0; avatarScale.ScaleX = avatarScale.ScaleY = 1;
         shadowScale.ScaleX = shadowScale.ScaleY = 1; bubble.IsVisible = false;
+        if (activeAvatar is not null) activeAvatar.Frame = 0;
         var area = Screens.Primary?.WorkingArea;
         if (!area.HasValue) return;
         Position = new PixelPoint(area.Value.Right - 220, area.Value.Bottom - 220);

@@ -1,6 +1,6 @@
 # Buddy
 
-Buddy is a desktop creature companion for macOS and Windows. The shared Avalonia/.NET app lets you choose from 16 original image avatars. It reminds you to drink water, blink, and stretch; accepts manual task reminders, meetings, and an HTTPS ICS calendar feed; hops to the center or across the screen when a reminder appears; and can speak reminders using a chosen installed system voice. It also accepts the earlier opt-in local Codex CLI and Claude Code status hooks.
+Buddy is a desktop creature companion for macOS and Windows. The shared Avalonia/.NET app lets you choose from 18 image avatars, including full body Mohanlal and Vijay characters with walking frames. It reminds you to drink water, blink, and stretch; accepts manual task reminders, meetings, and an HTTPS ICS calendar feed; travels to the center or across the screen when a reminder appears; and can speak reminders using a chosen installed system voice. The other avatars hop during travel. Buddy also accepts the earlier opt-in local Codex CLI and Claude Code status hooks.
 
 ## Requirements
 
@@ -45,6 +45,6 @@ In Settings, enable **Codex CLI** or **Claude Code** after configuring that tool
 dotnet run --project Buddy.Desktop -c Release -- --self-test
 ```
 
-Then launch the app and check: choose an avatar in Settings, set a one-minute water reminder, add a task and a meeting a few minutes ahead, and confirm Buddy hops to its announcement point, speaks, then hops back. Settings → Reminders → Buddy's reminder trip offers Stay put, Hop to center, and Hop across screen. Choose and test several installed voices in Settings. For calendar sync, enter an HTTPS ICS URL containing an upcoming event and check the sync status in Settings. Hide and restore Buddy from the tray. Quit and relaunch to check the saved avatar and position. Windows publishing is checked from macOS, but the Windows GUI and speech need a Windows machine for final manual verification.
+Then launch the app and check: choose Mohanlal or Vijay in Settings → Companion, set a one-minute water reminder, and confirm their arms and legs change pose as they walk to the announcement point, speak, then walk back. Other avatars hop. Add a task and a meeting a few minutes ahead to check those reminders too. Settings → Reminders → Buddy's reminder trip offers Stay put, Hop to center, and Hop across screen. Choose and test several installed voices in Settings. For calendar sync, enter an HTTPS ICS URL containing an upcoming event and check the sync status in Settings. Hide and restore Buddy from the tray. Quit and relaunch to check the saved avatar and position. Windows publishing is checked from macOS, but the Windows GUI and speech need a Windows machine for final manual verification.
 
 The previous Swift macOS app and its build scripts remain in the repo as [legacy documentation](docs/legacy-swift.md). Its local settings are separate from this cross-platform app.

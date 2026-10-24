@@ -6,7 +6,7 @@ using Avalonia.Platform;
 
 namespace Buddy.Desktop;
 
-public sealed record AvatarOption(string Category, string Name, string Atlas, int Index);
+public sealed record AvatarOption(string Category, string Name, string Atlas, int Index, int Frames = 1);
 
 public static class Avatars
 {
@@ -18,7 +18,8 @@ public static class Avatars
         new("Cartoons", "Robot", "characters", 0), new("Cartoons", "Ghost", "characters", 1),
         new("Cartoons", "Cloud", "characters", 2), new("Fantasy", "Alien", "characters", 3),
         new("Cinema", "Star", "characters", 4), new("Cinema", "Director", "characters", 5),
-        new("Cinema", "Detective", "characters", 6), new("Cinema", "Hero", "characters", 7)
+        new("Cinema", "Detective", "characters", 6), new("Cinema", "Hero", "characters", 7),
+        new("Cinema", "Mohanlal", "mohanlal-walk", 0, 4), new("Cinema", "Vijay", "vijay-walk", 0, 4)
     ];
     private static readonly Dictionary<string, Bitmap> Atlases = new();
     public static AvatarOption Find(string name) => All.FirstOrDefault(x => x.Name == name) ?? All[0];
@@ -35,14 +36,26 @@ public static class Avatars
 public sealed class AvatarView : Control
 {
     private readonly AvatarOption avatar;
+    private int frame;
+    public bool HasWalkFrames => avatar.Frames > 1;
+    public int Frame
+    {
+        get => frame;
+        set { if (frame == value) return; frame = value; InvalidateVisual(); }
+    }
     public AvatarView(AvatarOption avatar) { this.avatar = avatar; Width = 100; Height = 100; }
     public override void Render(DrawingContext context)
     {
         base.Render(context);
         var bitmap = Avatars.Atlas(avatar.Atlas);
         var cellWidth = bitmap.PixelSize.Width / 4.0;
-        var cellHeight = bitmap.PixelSize.Height / 2.0;
-        var source = new Rect((avatar.Index % 4) * cellWidth, (avatar.Index / 4) * cellHeight, cellWidth, cellHeight);
-        context.DrawImage(bitmap, source, Bounds);
+        var cellHeight = bitmap.PixelSize.Height / (avatar.Frames > 1 ? 1.0 : 2.0);
+        var source = new Rect((avatar.Frames > 1 ? frame % avatar.Frames : avatar.Index % 4) * cellWidth,
+            (avatar.Frames > 1 ? 0 : avatar.Index / 4) * cellHeight, cellWidth, cellHeight);
+        if (avatar.Frames == 1) { context.DrawImage(bitmap, source, Bounds); return; }
+        var scale = Math.Min(Bounds.Width / cellWidth, Bounds.Height / cellHeight);
+        var destination = new Rect(Bounds.X + (Bounds.Width - cellWidth * scale) / 2,
+            Bounds.Y + (Bounds.Height - cellHeight * scale) / 2, cellWidth * scale, cellHeight * scale);
+        context.DrawImage(bitmap, source, destination);
     }
 }
