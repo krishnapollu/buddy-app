@@ -16,6 +16,7 @@ public partial class App : Application
     private SettingsWindow? preferences;
     private DateTimeOffset lastFeedRefresh = DateTimeOffset.MinValue;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(30) };
+    private readonly DispatcherTimer hookTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
     public override void OnFrameworkInitializationCompleted()
     {
@@ -29,6 +30,10 @@ public partial class App : Application
             if (!settings.Visible) companion.Opened += (_, _) => companion.Hide();
             timer.Tick += async (_, _) => await Tick();
             timer.Start();
+            hookTimer.Tick += (_, _) => {
+                foreach (var message in AgentHooks.Drain(settings)) companion?.ShowStatus(message);
+            };
+            hookTimer.Start();
             Dispatcher.UIThread.Post(async () => await Tick());
         }
         base.OnFrameworkInitializationCompleted();

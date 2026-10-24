@@ -79,6 +79,12 @@ public partial class MainWindow : Window
         root.Children[1] = face;
         face.Text = Avatars.Emoji(settings.Avatar);
     }
+    public void ShowStatus(string message)
+    {
+        if (!IsVisible) return;
+        bubble.Text = message; bubble.IsVisible = true;
+        alertTimer.Stop(); alertTimer.Start();
+    }
     public void Alert(string message)
     {
         if (!IsVisible) { settings.Visible = true; Show(); }

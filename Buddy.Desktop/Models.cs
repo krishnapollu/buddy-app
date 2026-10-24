@@ -8,6 +8,8 @@ public sealed class BuddySettings
     public string? ImagePath { get; set; }
     public bool Visible { get; set; } = true;
     public bool Speak { get; set; } = true;
+    public bool CodexEnabled { get; set; }
+    public bool ClaudeEnabled { get; set; }
     public bool MoveForReminders { get; set; } = true;
     public int WaterMinutes { get; set; } = 60;
     public int BlinkMinutes { get; set; } = 20;

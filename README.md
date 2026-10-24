@@ -1,6 +1,6 @@
 # Buddy
 
-Buddy is a desktop creature companion for macOS and Windows. The shared Avalonia/.NET app lets you choose from 18 original themed avatars or import a PNG, JPEG, or WebP image. It reminds you to drink water, blink, and stretch; accepts manual meetings and an HTTPS ICS calendar feed; moves when a reminder appears; and can speak reminders using the operating system's voice.
+Buddy is a desktop creature companion for macOS and Windows. The shared Avalonia/.NET app lets you choose from 18 original themed avatars or import a PNG, JPEG, or WebP image. It reminds you to drink water, blink, and stretch; accepts manual meetings and an HTTPS ICS calendar feed; moves when a reminder appears; and can speak reminders using the operating system's voice. It also accepts the earlier opt-in local Codex CLI and Claude Code status hooks.
 
 ## Requirements
 
@@ -34,6 +34,10 @@ dotnet publish Buddy.Desktop -c Release -r win-x64 --self-contained true -p:Publ
 ```
 
 The Windows publish folder includes native DLLs alongside the executable; keep the whole folder together. These builds are unsigned, so the operating system may ask you to approve launching your own build.
+
+## Optional agent status hooks
+
+In Settings, enable **Codex CLI** or **Claude Code** after configuring that tool's local command hook. Use Buddy's executable with `--hook codex` for Codex CLI's `notify` command, or `--hook claude` for Claude Code's Stop, StopFailure, and Notification hooks. On macOS, an installed executable is `/Applications/Buddy.app/Contents/MacOS/Buddy.Desktop`; on Windows, use the full path to `Buddy.Desktop.exe`. Codex passes JSON as the next argument; Claude sends JSON on standard input. Buddy reads only the event type and shows a fixed local status label. The [older hook guide](docs/phase4.md) shows the config format for each tool; replace its legacy executable path with the new Buddy executable. These hooks are off by default.
 
 ## Test
 

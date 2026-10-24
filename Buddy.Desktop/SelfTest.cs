@@ -14,6 +14,8 @@ internal static class SelfTest
         const string ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:test-meeting\r\nDTSTART:20261025T120000Z\r\nDTEND:20261025T123000Z\r\nRRULE:FREQ=DAILY;COUNT=2\r\nSUMMARY:Team sync\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
         var events = CalendarFeed.Parse(ics, now);
         if (events.Count != 2 || events[0].Id == events[1].Id) throw new Exception("ICS recurrence failed.");
+        if (AgentHooks.Classify("codex", "{\"type\":\"agent-turn-complete\",\"prompt\":\"private\"}") != "Codex finished") throw new Exception("Codex hook failed.");
+        if (AgentHooks.Classify("claude", "{\"hook_event_name\":\"Notification\",\"message\":\"private\"}") != "Claude Code needs attention") throw new Exception("Claude hook failed.");
         Console.WriteLine("Buddy self-tests passed.");
     }
 }

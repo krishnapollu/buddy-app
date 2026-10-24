@@ -50,6 +50,13 @@ public sealed class SettingsWindow : Window
         var move = new CheckBox { Content = "Move Buddy when reminding", IsChecked = settings.MoveForReminders };
         move.IsCheckedChanged += (_, _) => { settings.MoveForReminders = move.IsChecked == true; Save(); };
         body.Children.Add(move);
+        body.Children.Add(new TextBlock { Text = "Agent status hooks", FontWeight = FontWeight.SemiBold });
+        var codex = new CheckBox { Content = "Codex CLI", IsChecked = settings.CodexEnabled };
+        codex.IsCheckedChanged += (_, _) => { settings.CodexEnabled = codex.IsChecked == true; Save(); };
+        body.Children.Add(codex);
+        var claude = new CheckBox { Content = "Claude Code", IsChecked = settings.ClaudeEnabled };
+        claude.IsCheckedChanged += (_, _) => { settings.ClaudeEnabled = claude.IsChecked == true; Save(); };
+        body.Children.Add(claude);
         body.Children.Add(new TextBlock { Text = "ICS calendar feed (HTTPS)", FontWeight = FontWeight.SemiBold });
         var feed = new TextBox { Text = settings.IcsUrl, PlaceholderText = "https://example.com/calendar.ics" };
         feed.LostFocus += (_, _) => { settings.IcsUrl = feed.Text?.Trim() ?? ""; Save(); refreshFeed(); };

@@ -12,6 +12,7 @@ class Program
     public static void Main(string[] args)
     {
         if (args.Contains("--self-test")) { SelfTest.Run(); return; }
+        if (args.Length >= 2 && args[0] == "--hook") { AgentHooks.Receive(args); return; }
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
