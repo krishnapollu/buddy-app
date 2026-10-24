@@ -2,10 +2,26 @@ import Foundation
 import CoreGraphics
 
 final class CompanionPreferences {
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
     private let visibilityKey = "companionVisible"
     private let positionXKey = "companionX"
     private let positionYKey = "companionY"
+    private let expressionKey = "companionExpression"
+    private let skinKey = "companionSkin"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    var expression: CreatureExpression {
+        get { CreatureExpression(rawValue: defaults.string(forKey: expressionKey) ?? "") ?? .calm }
+        set { defaults.set(newValue.rawValue, forKey: expressionKey) }
+    }
+
+    var skin: CreatureSkin {
+        get { CreatureSkin(rawValue: defaults.string(forKey: skinKey) ?? "") ?? .mint }
+        set { defaults.set(newValue.rawValue, forKey: skinKey) }
+    }
 
     var isVisible: Bool {
         get { defaults.object(forKey: visibilityKey) as? Bool ?? true }

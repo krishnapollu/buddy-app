@@ -1,6 +1,6 @@
-# Desktop Creature Companion — Phase 1
+# Desktop Creature Companion — Phase 2
 
-A small, original SwiftUI creature in a transparent AppKit panel. It breathes, blinks, looks around, and can be dragged between displays. The menu bar controls visibility, position reset, and quitting. The app works offline and has no dependencies or permissions to grant.
+A small, original SwiftUI creature in a transparent AppKit panel. It breathes, blinks, looks around, reacts to hover and clicks, and can be dragged between displays. The menu bar controls visibility, position, expression, skin, and quitting. The app works offline and has no dependencies or permissions to grant.
 
 ## Requirements
 
@@ -33,10 +33,11 @@ bash Scripts/test.sh
 ## Controls
 
 - Drag anywhere inside the compact creature window to move it. The pointer stays at the same spot on the creature while dragging.
-- Click the paw icon in the menu bar to **Hide Companion**, **Show Companion**, **Reset Position**, or **Quit**.
+- Hover over the creature to see a curious face. Click it to see a brief happy reaction. A drag does not trigger the click reaction.
+- Click the paw icon in the menu bar to **Hide Companion**, **Show Companion**, **Reset Position**, choose an **Expression** or **Skin**, or **Quit**.
 - The menu bar icon remains available when the creature is hidden. If you quit while hidden, relaunch the app and use **Show Companion** there.
 
-Visibility and position are stored in `UserDefaults`. On launch and show, an offscreen saved position is moved into a visible display area. Reset places the creature near the bottom-right of the main display's usable area.
+Visibility, position, expression, and skin are stored in `UserDefaults`. On launch and show, an offscreen saved position is moved into a visible display area. Reset places the creature near the bottom-right of the main display's usable area.
 
 ## Manual test checklist
 
@@ -47,5 +48,7 @@ Visibility and position are stored in `UserDefaults`. On launch and show, an off
 5. Drag to an external display and relaunch. Disconnect that display, relaunch, and check that the creature is back on a visible display.
 6. Enable **System Settings → Accessibility → Display → Reduce motion**; check that bobbing and sway stop while blinking remains.
 7. Enter a full-screen app; check that the creature does not cover it. Click the creature and continue typing in another app; keyboard focus should remain there.
+8. Hover, click, and drag the creature in turn. Check that hover and click change its face, while dragging only moves it.
+9. Select each expression and skin from the paw menu. Quit and relaunch to check that the chosen combination returns. Hide and show the creature to check that the reaction does not continue while hidden.
 
 The panel is deliberately compact (160 × 180 points) but its transparent corners are still part of its drag region. It uses the ordinary floating level and does not opt into full-screen spaces. A regular app window in a separate full-screen space can therefore hide it, as intended.

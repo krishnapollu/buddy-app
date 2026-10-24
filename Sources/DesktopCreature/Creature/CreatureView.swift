@@ -4,6 +4,7 @@ struct CreatureView: View {
     @ObservedObject var animator: CreatureAnimator
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var breathing = false
+    private var palette: CreaturePalette { animator.skin.palette }
 
     var body: some View {
         ZStack {
@@ -14,6 +15,7 @@ struct CreatureView: View {
                 .position(x: 80, y: 159)
 
             creature
+                .scaleEffect(animator.isReacting && !reduceMotion ? 1.055 : 1, anchor: .bottom)
                 .scaleEffect(x: breathing && !reduceMotion ? 1.025 : 0.985,
                              y: breathing && !reduceMotion ? 0.985 : 1.015,
                              anchor: .bottom)
@@ -21,7 +23,7 @@ struct CreatureView: View {
                 .offset(y: breathing && !reduceMotion ? -2 : 0)
         }
         .frame(width: 160, height: 180)
-        .accessibilityLabel("Animated desktop creature")
+        .accessibilityLabel("\(animator.skin.rawValue) desktop creature, \(animator.visibleExpression.rawValue) expression")
         .onAppear(perform: updateBreathing)
         .onChange(of: animator.isActive) { updateBreathing() }
         .onChange(of: reduceMotion) { updateBreathing() }
@@ -30,12 +32,12 @@ struct CreatureView: View {
     private var creature: some View {
         ZStack {
             Ellipse()
-                .fill(Color(red: 0.48, green: 0.70, blue: 0.72))
+                .fill(palette.ear)
                 .frame(width: 25, height: 37)
                 .rotationEffect(.degrees(-22))
                 .position(x: 43, y: 42)
             Ellipse()
-                .fill(Color(red: 0.48, green: 0.70, blue: 0.72))
+                .fill(palette.ear)
                 .frame(width: 25, height: 37)
                 .rotationEffect(.degrees(22))
                 .position(x: 117, y: 42)
@@ -51,21 +53,21 @@ struct CreatureView: View {
                 .position(x: 117, y: 43)
 
             Ellipse()
-                .fill(Color(red: 0.42, green: 0.64, blue: 0.67))
+                .fill(palette.foot)
                 .frame(width: 30, height: 14)
                 .position(x: 50, y: 147)
             Ellipse()
-                .fill(Color(red: 0.42, green: 0.64, blue: 0.67))
+                .fill(palette.foot)
                 .frame(width: 30, height: 14)
                 .position(x: 110, y: 147)
 
             Ellipse()
                 .fill(LinearGradient(
-                    colors: [Color(red: 0.75, green: 0.91, blue: 0.88), Color(red: 0.47, green: 0.72, blue: 0.73)],
+                    colors: [palette.light, palette.dark],
                     startPoint: .topLeading, endPoint: .bottomTrailing
                 ))
                 .overlay {
-                    Ellipse().stroke(Color(red: 0.35, green: 0.59, blue: 0.62).opacity(0.7), lineWidth: 1.5)
+                    Ellipse().stroke(palette.outline.opacity(0.7), lineWidth: 1.5)
                 }
                 .frame(width: 126, height: 119)
                 .position(x: 80, y: 93)
@@ -89,11 +91,7 @@ struct CreatureView: View {
             eye(at: 61)
             eye(at: 99)
 
-            Path { path in
-                path.move(to: CGPoint(x: 74, y: 111))
-                path.addQuadCurve(to: CGPoint(x: 86, y: 111), control: CGPoint(x: 80, y: 119))
-            }
-            .stroke(Color(red: 0.22, green: 0.36, blue: 0.39), style: StrokeStyle(lineWidth: 2.3, lineCap: .round))
+            mouth
         }
         .frame(width: 160, height: 180)
     }
@@ -108,9 +106,29 @@ struct CreatureView: View {
                 .frame(width: 4.5, height: 4.5)
                 .offset(x: -2, y: -4)
         }
-        .scaleEffect(y: animator.isBlinking ? 0.07 : 1)
-        .offset(x: animator.gaze)
+        .scaleEffect(y: animator.isBlinking ? 0.07 : (animator.visibleExpression == .sleepy ? 0.42 : 1))
+        .offset(x: animator.isHovered ? 0 : animator.gaze)
         .position(x: x, y: 91)
+    }
+
+    @ViewBuilder
+    private var mouth: some View {
+        if animator.visibleExpression == .curious {
+            Ellipse()
+                .stroke(Color(red: 0.22, green: 0.36, blue: 0.39), lineWidth: 2)
+                .frame(width: 7, height: 9)
+                .position(x: 80, y: 113)
+        } else {
+            Path { path in
+                let width: CGFloat = animator.visibleExpression == .happy ? 11 : 6
+                let depth: CGFloat = animator.visibleExpression == .happy ? 13 : 7
+                path.move(to: CGPoint(x: 80 - width, y: 111))
+                path.addQuadCurve(to: CGPoint(x: 80 + width, y: 111),
+                                  control: CGPoint(x: 80, y: 111 + depth))
+            }
+            .stroke(Color(red: 0.22, green: 0.36, blue: 0.39),
+                    style: StrokeStyle(lineWidth: 2.3, lineCap: .round))
+        }
     }
 
     private func updateBreathing() {

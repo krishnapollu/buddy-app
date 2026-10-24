@@ -15,3 +15,10 @@ export CLANG_MODULE_CACHE_PATH="$PWD/.build/module-cache"
   Sources/DesktopCreature/Window/WindowPosition.swift \
   Tests/DesktopCreatureTests/PositionChecks.swift
 .build/PositionChecks
+"$(xcrun --find swiftc)" -sdk "$sdk" -target arm64-apple-macos14.0 \
+  -module-cache-path "$PWD/.build/module-cache" \
+  -o .build/AppearanceChecks \
+  Sources/DesktopCreature/Creature/CreatureAppearance.swift \
+  Sources/DesktopCreature/Preferences/CompanionPreferences.swift \
+  Tests/DesktopCreatureTests/AppearanceChecks.swift
+.build/AppearanceChecks
