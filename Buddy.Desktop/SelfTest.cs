@@ -23,14 +23,14 @@ internal static class SelfTest
         settings.LastAlerts.Remove(taskAlert.Key);
         if (ReminderEngine.Due(settings, [], now.AddMinutes(11)).Any(x => x.Key == taskAlert.Key)) throw new Exception("Completed task fired.");
         if (Avatars.All.Length < 18 || Avatars.All.Select(x => x.Name).Distinct().Count() != Avatars.All.Length ||
-            Avatars.Find("Mohanlal").Frames != 4 || Avatars.Find("Vijay").Frames != 4)
+            Avatars.Find("Mohanlal").Frames != 8 || Avatars.Find("Vijay").Frames != 8 ||
+            Avatars.Find("Mohanlal").BetweenAtlas is null || Avatars.Find("Vijay").BetweenAtlas is null)
             throw new Exception("Avatar catalog invalid.");
         var area = new PixelRect(100, 50, 1000, 700);
-        if (MainWindow.ReminderTarget(area, new PixelPoint(900, 500), "Center") != new PixelPoint(505, 305))
+        if (MainWindow.ReminderTarget(area, new PixelSize(300, 285), 155) != new PixelPoint(450, 192))
             throw new Exception("Center reminder target invalid.");
-        if (MainWindow.ReminderTarget(area, new PixelPoint(900, 500), "Cross") != new PixelPoint(120, 305) ||
-            MainWindow.ReminderTarget(area, new PixelPoint(200, 500), "Cross") != new PixelPoint(890, 305))
-            throw new Exception("Cross-screen reminder target invalid.");
+        if (MainWindow.ReminderTarget(new PixelRect(100, 50, 2000, 1400), new PixelSize(600, 570), 310) != new PixelPoint(800, 335))
+            throw new Exception("Scaled center reminder target invalid.");
         var takeoff = MainWindow.HopFrame(0, 14, 1);
         var airborne = MainWindow.HopFrame(7, 14, 1);
         var landing = MainWindow.HopFrame(14, 14, 1);

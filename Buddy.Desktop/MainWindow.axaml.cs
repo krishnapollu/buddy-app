@@ -13,6 +13,8 @@ public partial class MainWindow : Window
 {
     private readonly BuddySettings settings;
     private readonly StackPanel panel;
+    private readonly Border bubbleCard;
+    private readonly TextBlock bubbleTitle;
     private readonly TextBlock bubble;
     private readonly Grid avatarHost;
     private readonly Grid avatarVisual;
@@ -23,6 +25,8 @@ public partial class MainWindow : Window
     private readonly ScaleTransform shadowScale = new();
     private readonly DispatcherTimer alertTimer = new() { Interval = TimeSpan.FromSeconds(6) };
     private readonly DispatcherTimer motionTimer = new() { Interval = TimeSpan.FromMilliseconds(30) };
+    private readonly DispatcherTimer idleTimer = new() { Interval = TimeSpan.FromMilliseconds(60) };
+    private readonly DateTime idleStarted = DateTime.UtcNow;
     private bool movingForAlert;
     private bool positionReady;
     private int motionStep;
@@ -40,10 +44,22 @@ public partial class MainWindow : Window
         InitializeComponent();
         panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom };
         panel.PointerPressed += (_, e) => { if (e.GetCurrentPoint(panel).Properties.IsLeftButtonPressed) BeginMoveDrag(e); };
-        bubble = new TextBlock { IsVisible = false, Background = Brushes.White, Foreground = Brushes.Black,
-            FontSize = 13, Padding = new Thickness(10, 6), TextAlignment = TextAlignment.Center,
-            TextWrapping = TextWrapping.Wrap, MaxWidth = 190, HorizontalAlignment = HorizontalAlignment.Center };
-        panel.Children.Add(bubble);
+        bubble = new TextBlock { Foreground = new SolidColorBrush(Color.Parse("#243047")),
+            FontSize = 15, FontWeight = FontWeight.SemiBold, TextAlignment = TextAlignment.Center,
+            TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 260, MaxHeight = 75, HorizontalAlignment = HorizontalAlignment.Center };
+        var bubbleContent = new StackPanel { Spacing = 5 };
+        bubbleTitle = new TextBlock { Text = "BUDDY REMINDER", FontSize = 10, FontWeight = FontWeight.Bold,
+            Foreground = new SolidColorBrush(Color.Parse("#876721")), HorizontalAlignment = HorizontalAlignment.Center };
+        bubbleContent.Children.Add(bubbleTitle);
+        bubbleContent.Children.Add(bubble);
+        bubbleCard = new Border { Child = bubbleContent, IsVisible = false,
+            Background = new SolidColorBrush(Color.Parse("#FFF9E9")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#E8D29A")), BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(13), Padding = new Thickness(13, 10),
+            Margin = new Thickness(0, 0, 0, 8), MinWidth = 210, MaxWidth = 290,
+            HorizontalAlignment = HorizontalAlignment.Center };
+        panel.Children.Add(bubbleCard);
         avatarHost = new Grid { Width = 155, Height = 155 };
         avatarVisual = new Grid { Width = 155, Height = 155, RenderTransformOrigin = RelativePoint.Center,
             RenderTransform = new TransformGroup { Children = { avatarScale, avatarRotation, avatarLift } } };
@@ -56,13 +72,20 @@ public partial class MainWindow : Window
         Content = panel;
         RefreshAvatar();
         Opened += (_, _) => {
-            if (settings.X.HasValue && settings.Y.HasValue && Screens.All.Any(screen =>
-                settings.X.Value >= screen.WorkingArea.X && settings.X.Value <= screen.WorkingArea.Right - 80 &&
-                settings.Y.Value >= screen.WorkingArea.Y && settings.Y.Value <= screen.WorkingArea.Bottom - 80))
-                Position = new PixelPoint((int)settings.X.Value, (int)settings.Y.Value);
+            var size = WindowPixelSize();
+            var savedScreen = settings.X.HasValue && settings.Y.HasValue ? Screens.All.FirstOrDefault(screen =>
+                settings.X.Value >= screen.WorkingArea.X && settings.X.Value < screen.WorkingArea.Right &&
+                settings.Y.Value >= screen.WorkingArea.Y && settings.Y.Value < screen.WorkingArea.Bottom) : null;
+            if (savedScreen is not null)
+            {
+                var area = savedScreen.WorkingArea;
+                Position = new PixelPoint(Math.Clamp((int)settings.X.GetValueOrDefault(), area.X, Math.Max(area.X, area.Right - size.Width)),
+                    Math.Clamp((int)settings.Y.GetValueOrDefault(), area.Y, Math.Max(area.Y, area.Bottom - size.Height)));
+            }
             else ResetPosition();
             positionReady = true;
             settings.X = Position.X; settings.Y = Position.Y; SettingsStore.Save(settings);
+            idleTimer.Start();
         };
         PositionChanged += (_, _) => {
             if (movingForAlert || !positionReady) return;
@@ -77,7 +100,7 @@ public partial class MainWindow : Window
                 (int)Math.Round(motionStart.Y + (motionTarget.Y - motionStart.Y) * fraction));
             if (activeAvatar?.HasWalkFrames == true)
             {
-                activeAvatar.Frame = ((motionStep - 1) / 4) % 4;
+                activeAvatar.Frame = ((motionStep - 1) / 2) % activeAvatar.FrameCount;
                 avatarLift.Y = -2 * Math.Abs(Math.Sin(2 * Math.PI * phase));
                 avatarRotation.Angle = 0;
                 avatarScale.ScaleX = motionTarget.X < motionStart.X ? -1 : 1;
@@ -108,7 +131,16 @@ public partial class MainWindow : Window
                 complete?.Invoke();
             }
         };
-        alertTimer.Tick += (_, _) => { alertTimer.Stop(); bubble.IsVisible = false; if (movingForAlert) MoveTo(homePosition); };
+        idleTimer.Tick += (_, _) => {
+            if (!IsVisible || motionTimer.IsEnabled) return;
+            var seconds = (DateTime.UtcNow - idleStarted).TotalSeconds;
+            var breath = Math.Sin(seconds * Math.PI / 2.2);
+            avatarScale.ScaleX = 1 + 0.008 * breath;
+            avatarScale.ScaleY = 1 - 0.012 * breath;
+            avatarRotation.Angle = 0.8 * Math.Sin(seconds * Math.PI / 3.5);
+            avatarLift.Y = -1.5 - 1.5 * Math.Sin(seconds * Math.PI / 2.2);
+        };
+        alertTimer.Tick += (_, _) => { alertTimer.Stop(); bubbleCard.IsVisible = false; if (movingForAlert) MoveTo(homePosition); };
     }
 
     public void RefreshAvatar()
@@ -133,7 +165,8 @@ public partial class MainWindow : Window
     public void ShowStatus(string message)
     {
         if (!IsVisible) return;
-        bubble.Text = message; bubble.IsVisible = true;
+        bubbleTitle.Text = "BUDDY STATUS";
+        bubble.Text = message; bubbleCard.IsVisible = true;
         alertTimer.Stop(); alertTimer.Start();
     }
     public void Alert(string message)
@@ -148,8 +181,8 @@ public partial class MainWindow : Window
             if (screen.HasValue)
             {
                 movingForAlert = true;
-                bubble.IsVisible = false;
-                MoveTo(ReminderTarget(screen.Value, Position, settings.ReminderMotion), Announce);
+                bubbleCard.IsVisible = false;
+                MoveTo(ReminderTarget(screen.Value, WindowPixelSize(), (int)Math.Round(155 * RenderScaling)), Announce);
                 return;
             }
         }
@@ -157,17 +190,20 @@ public partial class MainWindow : Window
     }
     private void Announce()
     {
-        bubble.Text = pendingAnnouncement; bubble.IsVisible = true;
+        bubbleTitle.Text = pendingAnnouncement.StartsWith("Task due:", StringComparison.Ordinal) ? "TASK REMINDER" :
+            pendingAnnouncement.StartsWith("Meeting soon:", StringComparison.Ordinal) ? "MEETING SOON" : "BUDDY REMINDER";
+        bubble.Text = pendingAnnouncement; bubbleCard.IsVisible = true;
+        alertTimer.Interval = TimeSpan.FromSeconds(Math.Clamp(pendingAnnouncement.Length / 14.0, 8, 14));
         alertTimer.Stop(); alertTimer.Start();
-        if (settings.Speak) Speech.Say(pendingAnnouncement, settings.Voice);
+        if (settings.Speak && activeAvatar?.HasWalkFrames != true) Speech.Say(pendingAnnouncement, settings.Voice);
     }
-    internal static PixelPoint ReminderTarget(PixelRect area, PixelPoint current, string mode)
+    private PixelSize WindowPixelSize() => new((int)Math.Ceiling(Width * RenderScaling), (int)Math.Ceiling(Height * RenderScaling));
+    internal static PixelPoint ReminderTarget(PixelRect area, PixelSize window, int avatarHeight)
     {
-        var centerX = area.X + (area.Width - 190) / 2;
-        var centerY = area.Y + (area.Height - 190) / 2;
-        var x = mode == "Cross" ? (current.X >= centerX ? area.X + 20 : area.Right - 210) : centerX;
-        return new PixelPoint(Math.Clamp(x, area.X, Math.Max(area.X, area.Right - 190)),
-            Math.Clamp(centerY, area.Y, Math.Max(area.Y, area.Bottom - 190)));
+        var x = area.X + (area.Width - window.Width) / 2;
+        var y = area.Y + area.Height / 2 - window.Height + avatarHeight / 2;
+        return new PixelPoint(Math.Clamp(x, area.X, Math.Max(area.X, area.Right - window.Width)),
+            Math.Clamp(y, area.Y, Math.Max(area.Y, area.Bottom - window.Height)));
     }
     internal static (double Fraction, double Lift, double Phase) HopFrame(int step, int steps, int hops)
     {
@@ -183,17 +219,18 @@ public partial class MainWindow : Window
         motionFinished = complete;
         var distance = Math.Sqrt(Math.Pow(target.X - Position.X, 2) + Math.Pow(target.Y - Position.Y, 2));
         motionHops = Math.Max(1, (int)Math.Ceiling(distance / 72));
-        motionSteps = motionHops * 14;
+        motionSteps = motionHops * (activeAvatar?.HasWalkFrames == true ? 16 : 14);
         motionTimer.Start();
     }
     public void ResetPosition()
     {
         motionTimer.Stop(); alertTimer.Stop(); movingForAlert = false; motionFinished = null;
         avatarLift.Y = 0; avatarRotation.Angle = 0; avatarScale.ScaleX = avatarScale.ScaleY = 1;
-        shadowScale.ScaleX = shadowScale.ScaleY = 1; bubble.IsVisible = false;
+        shadowScale.ScaleX = shadowScale.ScaleY = 1; bubbleCard.IsVisible = false;
         if (activeAvatar is not null) activeAvatar.Frame = 0;
         var area = Screens.Primary?.WorkingArea;
         if (!area.HasValue) return;
-        Position = new PixelPoint(area.Value.Right - 220, area.Value.Bottom - 220);
+        var size = WindowPixelSize();
+        Position = new PixelPoint(area.Value.Right - size.Width - 30, area.Value.Bottom - size.Height - 30);
     }
 }

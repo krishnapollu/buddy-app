@@ -12,7 +12,6 @@ public sealed class BuddySettings
     public bool CodexEnabled { get; set; }
     public bool ClaudeEnabled { get; set; }
     public bool MoveForReminders { get; set; } = true;
-    public string ReminderMotion { get; set; } = "Center";
     public int WaterMinutes { get; set; } = 60;
     public int BlinkMinutes { get; set; } = 20;
     public int StretchMinutes { get; set; } = 60;

@@ -59,7 +59,7 @@ public sealed class SettingsWindow : Window
     {
         var body = Section();
         body.Children.Add(SectionTitle("Choose an avatar"));
-        body.Children.Add(new TextBlock { Text = "Choose one of Buddy's original characters.", TextWrapping = TextWrapping.Wrap });
+        body.Children.Add(new TextBlock { Text = "Choose a character. Mohanlal and Vijay show text reminders without a voice.", TextWrapping = TextWrapping.Wrap });
         foreach (var group in Avatars.All.GroupBy(x => x.Category))
         {
             body.Children.Add(SectionTitle(group.Key));
@@ -107,15 +107,8 @@ public sealed class SettingsWindow : Window
         var speak = new CheckBox { Content = "Speak reminders", IsChecked = settings.Speak };
         speak.IsCheckedChanged += (_, _) => { settings.Speak = speak.IsChecked == true; Save(); };
         options.Children.Add(speak);
-        options.Children.Add(new TextBlock { Text = "Buddy's reminder trip" });
-        var move = new ComboBox { ItemsSource = new[] { "Stay put", "Hop to center", "Hop across screen" },
-            SelectedIndex = !settings.MoveForReminders ? 0 : settings.ReminderMotion == "Cross" ? 2 : 1,
-            MinWidth = 220, HorizontalAlignment = HorizontalAlignment.Left };
-        move.SelectionChanged += (_, _) => {
-            settings.MoveForReminders = move.SelectedIndex != 0;
-            settings.ReminderMotion = move.SelectedIndex == 2 ? "Cross" : "Center";
-            Save();
-        };
+        var move = new CheckBox { Content = "Come to screen center for reminders", IsChecked = settings.MoveForReminders };
+        move.IsCheckedChanged += (_, _) => { settings.MoveForReminders = move.IsChecked == true; Save(); };
         options.Children.Add(move);
         body.Children.Add(Card(options));
         return body;
@@ -147,7 +140,7 @@ public sealed class SettingsWindow : Window
         var body = Section();
         var voice = new StackPanel { Spacing = 10 };
         voice.Children.Add(SectionTitle("Voice"));
-        voice.Children.Add(new TextBlock { Text = "Choose an installed system voice, then play a sample.", TextWrapping = TextWrapping.Wrap });
+        voice.Children.Add(new TextBlock { Text = "Choose an installed system voice, then play a sample. Mohanlal and Vijay use text only.", TextWrapping = TextWrapping.Wrap });
         voices.ItemsSource = new List<VoiceOption> { new("Default", "System default") };
         voices.SelectedIndex = 0;
         voices.SelectionChanged += (_, _) => { if (loadingVoices) return; if (voices.SelectedItem is VoiceOption selected) { settings.Voice = selected.Name; Save(); } };
