@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 
 namespace Buddy.Desktop;
@@ -13,7 +12,6 @@ public sealed class SettingsWindow : Window
     private readonly BuddySettings settings;
     private readonly Action avatarChanged;
     private readonly TextBlock feedStatus = new() { Text = "Calendar not synced yet", TextWrapping = TextWrapping.Wrap };
-    private readonly TextBlock importStatus = new() { TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock voiceStatus = new() { TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel tasks = new() { Spacing = 8 };
     private readonly StackPanel meetings = new() { Spacing = 8 };
@@ -61,9 +59,7 @@ public sealed class SettingsWindow : Window
     {
         var body = Section();
         body.Children.Add(SectionTitle("Choose an avatar"));
-        body.Children.Add(new TextBlock { Text = "Original character art. Select one below or import your own photo.", TextWrapping = TextWrapping.Wrap });
-        var import = Button("Import and crop image…", async () => await ImportImage());
-        body.Children.Add(import); body.Children.Add(importStatus);
+        body.Children.Add(new TextBlock { Text = "Choose one of Buddy's original characters.", TextWrapping = TextWrapping.Wrap });
         foreach (var group in Avatars.All.GroupBy(x => x.Category))
         {
             body.Children.Add(SectionTitle(group.Key));
@@ -76,7 +72,7 @@ public sealed class SettingsWindow : Window
                     column.Children.Add(new AvatarView(avatar) { Width = 105, Height = 105 });
                     column.Children.Add(new TextBlock { Text = avatar.Name, HorizontalAlignment = HorizontalAlignment.Center });
                     var card = new Button { Content = column, Width = 140, Height = 140, Tag = avatar.Name };
-                    card.Click += (_, _) => { settings.Avatar = avatar.Name; settings.ImagePath = null; Save(true); HighlightAvatar(); importStatus.Text = ""; };
+                    card.Click += (_, _) => { settings.Avatar = avatar.Name; settings.ImagePath = null; Save(true); HighlightAvatar(); };
                     avatarButtons.Add(card); row.Children.Add(card);
                 }
                 body.Children.Add(row);
@@ -90,33 +86,6 @@ public sealed class SettingsWindow : Window
         foreach (var button in avatarButtons)
             button.BorderBrush = settings.ImagePath is null && (string?)button.Tag == settings.Avatar ? Brushes.DodgerBlue : Brushes.Gray;
     }
-    private async Task ImportImage()
-    {
-        importStatus.Text = "";
-        try
-        {
-            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { AllowMultiple = false,
-                Title = "Choose an avatar image", FileTypeFilter = [new FilePickerFileType("Images") { Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp"] }] });
-            if (files.Count == 0) return;
-            await using var source = await files[0].OpenReadAsync();
-            using var data = new MemoryStream();
-            var buffer = new byte[81_920];
-            int count;
-            while ((count = await source.ReadAsync(buffer)) > 0)
-            {
-                if (data.Length + count > 12_000_000) throw new InvalidDataException("Choose an image under 12 MB.");
-                data.Write(buffer, 0, count);
-            }
-            var crop = new CropWindow(data.ToArray());
-            var path = await crop.ShowDialog<string?>(this);
-            if (path is null) return;
-            settings.ImagePath = path; Save(true); HighlightAvatar();
-            importStatus.Text = "Your cropped image is now the active avatar.";
-        }
-        catch (Exception e)
-        { importStatus.Text = "Image import failed: " + e.Message; }
-    }
-
     private Control RemindersTab()
     {
         var body = Section();
@@ -138,8 +107,15 @@ public sealed class SettingsWindow : Window
         var speak = new CheckBox { Content = "Speak reminders", IsChecked = settings.Speak };
         speak.IsCheckedChanged += (_, _) => { settings.Speak = speak.IsChecked == true; Save(); };
         options.Children.Add(speak);
-        var move = new CheckBox { Content = "Move Buddy when reminding", IsChecked = settings.MoveForReminders };
-        move.IsCheckedChanged += (_, _) => { settings.MoveForReminders = move.IsChecked == true; Save(); };
+        options.Children.Add(new TextBlock { Text = "Buddy's reminder trip" });
+        var move = new ComboBox { ItemsSource = new[] { "Stay put", "Hop to center", "Hop across screen" },
+            SelectedIndex = !settings.MoveForReminders ? 0 : settings.ReminderMotion == "Cross" ? 2 : 1,
+            MinWidth = 220, HorizontalAlignment = HorizontalAlignment.Left };
+        move.SelectionChanged += (_, _) => {
+            settings.MoveForReminders = move.SelectedIndex != 0;
+            settings.ReminderMotion = move.SelectedIndex == 2 ? "Cross" : "Center";
+            Save();
+        };
         options.Children.Add(move);
         body.Children.Add(Card(options));
         return body;

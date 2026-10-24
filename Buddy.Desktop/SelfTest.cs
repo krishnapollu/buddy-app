@@ -1,3 +1,5 @@
+using Avalonia;
+
 namespace Buddy.Desktop;
 
 internal static class SelfTest
@@ -21,6 +23,17 @@ internal static class SelfTest
         settings.LastAlerts.Remove(taskAlert.Key);
         if (ReminderEngine.Due(settings, [], now.AddMinutes(11)).Any(x => x.Key == taskAlert.Key)) throw new Exception("Completed task fired.");
         if (Avatars.All.Length < 16 || Avatars.All.Select(x => x.Name).Distinct().Count() != Avatars.All.Length) throw new Exception("Avatar catalog invalid.");
+        var area = new PixelRect(100, 50, 1000, 700);
+        if (MainWindow.ReminderTarget(area, new PixelPoint(900, 500), "Center") != new PixelPoint(505, 305))
+            throw new Exception("Center reminder target invalid.");
+        if (MainWindow.ReminderTarget(area, new PixelPoint(900, 500), "Cross") != new PixelPoint(120, 305) ||
+            MainWindow.ReminderTarget(area, new PixelPoint(200, 500), "Cross") != new PixelPoint(890, 305))
+            throw new Exception("Cross-screen reminder target invalid.");
+        var takeoff = MainWindow.HopFrame(0, 14, 1);
+        var airborne = MainWindow.HopFrame(7, 14, 1);
+        var landing = MainWindow.HopFrame(14, 14, 1);
+        if (takeoff.Fraction != 0 || takeoff.Lift != 0 || airborne.Fraction != 0.5 || airborne.Lift < 0.99 ||
+            landing.Fraction != 1 || landing.Lift != 0) throw new Exception("Reminder hop cycle invalid.");
         const string ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:test-meeting\r\nDTSTART:20261025T120000Z\r\nDTEND:20261025T123000Z\r\nRRULE:FREQ=DAILY;COUNT=2\r\nSUMMARY:Team sync\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
         var events = CalendarFeed.Parse(ics, now);
         if (events.Count != 2 || events[0].Id == events[1].Id) throw new Exception("ICS recurrence failed.");
