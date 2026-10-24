@@ -20,6 +20,9 @@ enum AppearanceChecks {
         defaults.set("Unknown", forKey: "companionSkin")
         assert(restored.expression == .calm)
         assert(restored.skin == .mint)
+        assert(!restored.notificationsEnabled)
+        restored.notificationsEnabled = true
+        assert(preferences.notificationsEnabled)
         print("Appearance checks passed")
     }
 }

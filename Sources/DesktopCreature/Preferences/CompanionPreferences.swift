@@ -8,6 +8,7 @@ final class CompanionPreferences {
     private let positionYKey = "companionY"
     private let expressionKey = "companionExpression"
     private let skinKey = "companionSkin"
+    private let notificationsKey = "localNotificationsEnabled"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -21,6 +22,11 @@ final class CompanionPreferences {
     var skin: CreatureSkin {
         get { CreatureSkin(rawValue: defaults.string(forKey: skinKey) ?? "") ?? .mint }
         set { defaults.set(newValue.rawValue, forKey: skinKey) }
+    }
+
+    var notificationsEnabled: Bool {
+        get { defaults.bool(forKey: notificationsKey) }
+        set { defaults.set(newValue, forKey: notificationsKey) }
     }
 
     var isVisible: Bool {

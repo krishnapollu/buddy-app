@@ -3,6 +3,7 @@ import SwiftUI
 
 final class CreaturePanel: NSPanel {
     var onDragEnd: ((NSPoint) -> Void)?
+    var onDragMove: (() -> Void)?
     var onHoverChange: ((Bool) -> Void)?
     var onClick: (() -> Void)?
 
@@ -17,6 +18,7 @@ final class CreaturePanel: NSPanel {
         collectionBehavior = [.managed]
         let host = CreatureHostView(rootView: content)
         host.onDragEnd = { [weak self] origin in self?.onDragEnd?(origin) }
+        host.onDragMove = { [weak self] in self?.onDragMove?() }
         host.onHoverChange = { [weak self] hovered in self?.onHoverChange?(hovered) }
         host.onClick = { [weak self] in self?.onClick?() }
         contentView = host
@@ -28,6 +30,7 @@ final class CreaturePanel: NSPanel {
 
 private final class CreatureHostView: NSHostingView<CreatureView> {
     var onDragEnd: ((NSPoint) -> Void)?
+    var onDragMove: (() -> Void)?
     var onHoverChange: ((Bool) -> Void)?
     var onClick: (() -> Void)?
     private var pointerOffset: NSPoint?
@@ -68,6 +71,7 @@ private final class CreatureHostView: NSHostingView<CreatureView> {
         guard let screen = WindowPosition.screen(containing: pointer, screens: NSScreen.screens) else { return }
         let wanted = NSPoint(x: pointer.x - pointerOffset.x, y: pointer.y - pointerOffset.y)
         window.setFrameOrigin(WindowPosition.clamp(wanted, size: window.frame.size, to: screen.visibleFrame))
+        onDragMove?()
     }
 
     override func mouseUp(with event: NSEvent) {

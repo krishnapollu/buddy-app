@@ -22,3 +22,12 @@ export CLANG_MODULE_CACHE_PATH="$PWD/.build/module-cache"
   Sources/DesktopCreature/Preferences/CompanionPreferences.swift \
   Tests/DesktopCreatureTests/AppearanceChecks.swift
 .build/AppearanceChecks
+"$(xcrun --find swiftc)" -sdk "$sdk" -target arm64-apple-macos14.0 \
+  -module-cache-path "$PWD/.build/module-cache" \
+  -o .build/IntegrationChecks \
+  Sources/DesktopCreature/Integration/IntegrationInbox.swift \
+  Tests/DesktopCreatureTests/IntegrationChecks.swift
+.build/IntegrationChecks
+chain_output="$(/bin/bash Scripts/codex-notify-chain.sh /usr/bin/true /bin/echo existing '{"type":"agent-turn-complete"}')"
+[[ "$chain_output" == 'existing {"type":"agent-turn-complete"}' ]]
+echo "Codex hook chain check passed"
