@@ -12,5 +12,7 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
     <PackageReference Include="Ical.Net" Version="5.2.3" />
     <AvaloniaResource Include="Assets/paw.png" />
+    <AvaloniaResource Include="Assets/*-atlas.png" />
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
   </ItemGroup>
 </Project>

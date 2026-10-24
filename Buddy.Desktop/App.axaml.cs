@@ -24,7 +24,6 @@ public partial class App : Application
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             companion = new MainWindow(settings);
-            companion.OpenSettingsRequested += ShowSettings;
             SetupTray(desktop);
             desktop.MainWindow = companion;
             if (!settings.Visible) companion.Opened += (_, _) => companion.Hide();

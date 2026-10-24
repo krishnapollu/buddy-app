@@ -25,4 +25,5 @@ cat > .build/Buddy.app/Contents/Info.plist <<'PLIST'
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
 PLIST
+codesign --force --deep --sign - .build/Buddy.app
 printf 'Built %s\n' "$PWD/.build/Buddy.app"

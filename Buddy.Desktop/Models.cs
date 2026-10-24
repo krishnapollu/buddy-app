@@ -8,6 +8,7 @@ public sealed class BuddySettings
     public string? ImagePath { get; set; }
     public bool Visible { get; set; } = true;
     public bool Speak { get; set; } = true;
+    public string Voice { get; set; } = "Default";
     public bool CodexEnabled { get; set; }
     public bool ClaudeEnabled { get; set; }
     public bool MoveForReminders { get; set; } = true;
@@ -19,6 +20,7 @@ public sealed class BuddySettings
     public double? X { get; set; }
     public double? Y { get; set; }
     public List<Meeting> Meetings { get; set; } = [];
+    public List<TaskReminder> Tasks { get; set; } = [];
     public Dictionary<string, DateTimeOffset> LastAlerts { get; set; } = [];
 }
 
@@ -27,6 +29,14 @@ public sealed class Meeting
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Title { get; set; } = "";
     public DateTimeOffset StartsAt { get; set; }
+}
+
+public sealed class TaskReminder
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Title { get; set; } = "";
+    public DateTimeOffset DueAt { get; set; }
+    public bool IsDone { get; set; }
 }
 
 public static class SettingsStore
@@ -68,6 +78,11 @@ public static class ReminderEngine
                 continue;
             }
             if (now - last >= TimeSpan.FromMinutes(minutes)) due.Add(new(key, text));
+        }
+        foreach (var task in settings.Tasks.Where(x => !x.IsDone && x.DueAt <= now))
+        {
+            var key = "task:" + task.Id;
+            if (!settings.LastAlerts.ContainsKey(key)) due.Add(new(key, "Task due: " + task.Title));
         }
         foreach (var meeting in settings.Meetings.Concat(calendarMeetings))
         {

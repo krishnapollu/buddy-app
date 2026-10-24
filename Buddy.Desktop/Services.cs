@@ -42,37 +42,3 @@ public sealed class CalendarFeed
         return new Guid(bytes);
     }
 }
-
-public static class Speech
-{
-    public static void Say(string message)
-    {
-        try
-        {
-            if (OperatingSystem.IsMacOS())
-                Process.Start(new ProcessStartInfo("/usr/bin/say") { ArgumentList = { message }, UseShellExecute = false, CreateNoWindow = true });
-            else if (OperatingSystem.IsWindows())
-            {
-                var script = "Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Speak([Console]::In.ReadToEnd())";
-                var process = Process.Start(new ProcessStartInfo("powershell.exe") {
-                    ArgumentList = { "-NoProfile", "-NonInteractive", "-Command", script },
-                    RedirectStandardInput = true, UseShellExecute = false, CreateNoWindow = true });
-                if (process is not null) { process.StandardInput.Write(message); process.StandardInput.Close(); }
-            }
-        }
-        catch (System.ComponentModel.Win32Exception) { }
-    }
-}
-
-public static class Avatars
-{
-    public static readonly (string Category, string Name, string Emoji)[] All = [
-        ("Pets", "Cat", "🐱"), ("Pets", "Dog", "🐶"), ("Pets", "Rabbit", "🐰"),
-        ("Pets", "Fox", "🦊"), ("Pets", "Panda", "🐼"), ("Pets", "Owl", "🦉"),
-        ("Fantasy", "Dragon", "🐲"), ("Fantasy", "Unicorn", "🦄"), ("Fantasy", "Alien", "👽"),
-        ("Cartoons", "Robot", "🤖"), ("Cartoons", "Ghost", "👻"), ("Cartoons", "Cloud", "☁️"),
-        ("Cinema", "Star", "🌟"), ("Cinema", "Director", "🎬"), ("Cinema", "Detective", "🕵️"),
-        ("Cinema", "Hero", "🦸"), ("Nature", "Flower", "🌻"), ("Nature", "Mushroom", "🍄")
-    ];
-    public static string Emoji(string name) => All.FirstOrDefault(x => x.Name == name).Emoji ?? "🐱";
-}
