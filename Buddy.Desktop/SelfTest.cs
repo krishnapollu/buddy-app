@@ -24,8 +24,13 @@ internal static class SelfTest
         if (ReminderEngine.Due(settings, [], now.AddMinutes(11)).Any(x => x.Key == taskAlert.Key)) throw new Exception("Completed task fired.");
         if (Avatars.All.Length < 18 || Avatars.All.Select(x => x.Name).Distinct().Count() != Avatars.All.Length ||
             Avatars.Find("Mohanlal").Frames != 8 || Avatars.Find("Vijay").Frames != 8 ||
-            Avatars.Find("Mohanlal").BetweenAtlas is null || Avatars.Find("Vijay").BetweenAtlas is null)
+            Avatars.Find("Mohanlal").BetweenAtlas is null || Avatars.Find("Vijay").BetweenAtlas is null ||
+            Avatars.Find("Mohanlal").GestureAtlas is null || Avatars.Find("Vijay").GestureAtlas is null)
             throw new Exception("Avatar catalog invalid.");
+        if (MainWindow.GestureFrameAt(0, false) != 0 || MainWindow.GestureFrameAt(8.5, false) != 2 ||
+            MainWindow.GestureFrameAt(9.5, false) != 0 || MainWindow.GestureFrameAt(1, true) != 3 ||
+            MainWindow.GestureFrameAt(3, true) != 0)
+            throw new Exception("Gesture timing invalid.");
         var area = new PixelRect(100, 50, 1000, 700);
         if (MainWindow.ReminderTarget(area, new PixelSize(300, 285), 155) != new PixelPoint(450, 192))
             throw new Exception("Center reminder target invalid.");

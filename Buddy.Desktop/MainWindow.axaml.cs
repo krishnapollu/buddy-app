@@ -27,6 +27,8 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer motionTimer = new() { Interval = TimeSpan.FromMilliseconds(30) };
     private readonly DispatcherTimer idleTimer = new() { Interval = TimeSpan.FromMilliseconds(60) };
     private readonly DateTime idleStarted = DateTime.UtcNow;
+    private DateTime announcementStarted;
+    private bool announcementActive;
     private bool movingForAlert;
     private bool positionReady;
     private int motionStep;
@@ -100,6 +102,7 @@ public partial class MainWindow : Window
                 (int)Math.Round(motionStart.Y + (motionTarget.Y - motionStart.Y) * fraction));
             if (activeAvatar?.HasWalkFrames == true)
             {
+                activeAvatar.GestureFrame = -1;
                 activeAvatar.Frame = ((motionStep - 1) / 2) % activeAvatar.FrameCount;
                 avatarLift.Y = -2 * Math.Abs(Math.Sin(2 * Math.PI * phase));
                 avatarRotation.Angle = 0;
@@ -121,7 +124,7 @@ public partial class MainWindow : Window
                 avatarLift.Y = 0; avatarRotation.Angle = 0;
                 avatarScale.ScaleX = 1; avatarScale.ScaleY = 1;
                 shadowScale.ScaleX = 1; shadowScale.ScaleY = 1;
-                if (activeAvatar is not null) activeAvatar.Frame = 0;
+                if (activeAvatar is not null) { activeAvatar.Frame = 0; activeAvatar.GestureFrame = activeAvatar.HasGestures ? 0 : -1; }
                 if (motionTarget == homePosition) {
                     movingForAlert = false;
                     settings.X = Position.X; settings.Y = Position.Y; SettingsStore.Save(settings);
@@ -137,10 +140,18 @@ public partial class MainWindow : Window
             var breath = Math.Sin(seconds * Math.PI / 2.2);
             avatarScale.ScaleX = 1 + 0.008 * breath;
             avatarScale.ScaleY = 1 - 0.012 * breath;
-            avatarRotation.Angle = 0.8 * Math.Sin(seconds * Math.PI / 3.5);
+            var nod = seconds % 11;
+            avatarRotation.Angle = 0.8 * Math.Sin(seconds * Math.PI / 3.5) +
+                (nod >= 7 && nod < 8.5 ? 1.6 * Math.Sin((nod - 7) * Math.PI / 1.5) : 0);
             avatarLift.Y = -1.5 - 1.5 * Math.Sin(seconds * Math.PI / 2.2);
+            if (activeAvatar?.HasGestures == true)
+                activeAvatar.GestureFrame = GestureFrameAt(announcementActive ?
+                    (DateTime.UtcNow - announcementStarted).TotalSeconds : seconds, announcementActive);
         };
-        alertTimer.Tick += (_, _) => { alertTimer.Stop(); bubbleCard.IsVisible = false; if (movingForAlert) MoveTo(homePosition); };
+        alertTimer.Tick += (_, _) => {
+            alertTimer.Stop(); bubbleCard.IsVisible = false; announcementActive = false;
+            if (movingForAlert) MoveTo(homePosition);
+        };
     }
 
     public void RefreshAvatar()
@@ -165,6 +176,7 @@ public partial class MainWindow : Window
     public void ShowStatus(string message)
     {
         if (!IsVisible) return;
+        announcementActive = false;
         bubbleTitle.Text = "BUDDY STATUS";
         bubble.Text = message; bubbleCard.IsVisible = true;
         alertTimer.Stop(); alertTimer.Start();
@@ -173,6 +185,7 @@ public partial class MainWindow : Window
     {
         if (!IsVisible) { settings.Visible = true; Show(); }
         pendingAnnouncement = message;
+        announcementActive = false;
         alertTimer.Stop();
         if (settings.MoveForReminders)
         {
@@ -190,6 +203,8 @@ public partial class MainWindow : Window
     }
     private void Announce()
     {
+        announcementActive = true;
+        announcementStarted = DateTime.UtcNow;
         bubbleTitle.Text = pendingAnnouncement.StartsWith("Task due:", StringComparison.Ordinal) ? "TASK REMINDER" :
             pendingAnnouncement.StartsWith("Meeting soon:", StringComparison.Ordinal) ? "MEETING SOON" : "BUDDY REMINDER";
         bubble.Text = pendingAnnouncement; bubbleCard.IsVisible = true;
@@ -213,8 +228,16 @@ public partial class MainWindow : Window
         return ((Math.Floor(hop) + phase * phase * (3 - 2 * phase)) / hops,
             Math.Sin(Math.PI * phase), phase);
     }
+    internal static int GestureFrameAt(double seconds, bool announcing)
+    {
+        var phase = seconds % (announcing ? 4 : 13);
+        if (announcing) return phase < 0.25 ? 0 : phase < 0.55 ? 1 : phase < 1.75 ? 3 :
+            phase < 2.2 ? 2 : phase < 2.5 ? 1 : 0;
+        return phase < 8 || phase >= 9.15 ? 0 : phase < 8.28 ? 1 : phase < 8.85 ? 2 : 1;
+    }
     private void MoveTo(PixelPoint target, Action? complete = null)
     {
+        if (activeAvatar is not null) activeAvatar.GestureFrame = -1;
         motionTimer.Stop(); motionStart = Position; motionTarget = target; motionStep = 0;
         motionFinished = complete;
         var distance = Math.Sqrt(Math.Pow(target.X - Position.X, 2) + Math.Pow(target.Y - Position.Y, 2));
@@ -225,9 +248,10 @@ public partial class MainWindow : Window
     public void ResetPosition()
     {
         motionTimer.Stop(); alertTimer.Stop(); movingForAlert = false; motionFinished = null;
+        announcementActive = false;
         avatarLift.Y = 0; avatarRotation.Angle = 0; avatarScale.ScaleX = avatarScale.ScaleY = 1;
         shadowScale.ScaleX = shadowScale.ScaleY = 1; bubbleCard.IsVisible = false;
-        if (activeAvatar is not null) activeAvatar.Frame = 0;
+        if (activeAvatar is not null) { activeAvatar.Frame = 0; activeAvatar.GestureFrame = activeAvatar.HasGestures ? 0 : -1; }
         var area = Screens.Primary?.WorkingArea;
         if (!area.HasValue) return;
         var size = WindowPixelSize();
