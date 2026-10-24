@@ -1,2 +1,4 @@
 .build/
 .DS_Store
+Buddy.Desktop/bin/
+Buddy.Desktop/obj/
